@@ -45,3 +45,60 @@ def MVO(mu, Q):
     return x.value
 
 
+def market_cap(r_mkt, R):
+    '''
+    Returns estimated market portfolio weights.
+
+    Inputs:
+        r_mkt (np.ndarray): T x 1 vector of market returns
+        R (np.ndarray): T x n matrix of asset returns
+    
+    Returns:
+        x (np.ndarray): n x 1 vector of estimated asset weights for the market portfolio
+    '''
+    T, n = R.shape
+
+    # Define and solve using CVXPY
+    x = cp.Variable(n)
+
+    # Constrain weights to sum to 1
+    Aeq = np.ones([1, n])
+    beq = 1
+
+    # Disallow short sales
+    lb = np.zeros(n)
+
+    # Define objective function
+    error = cp.norm(r_mkt - (R @ x), p=2)
+    objective = cp.Minimize(error)
+
+    # Define constraints
+    constraints = [Aeq @ x == beq,
+                   x >= lb]
+    
+    prob = cp.Problem(objective, constraints)
+    prob.solve(verbose=False, solver=cp.ECOS)
+
+    return x.value
+
+
+def MV_TE(x_mkt, mu, Q, k):
+    n = len(mu)
+
+    x = cp.Variable(n)
+    y = cp.Variable(n, boolean=True)
+
+    lb = np.zeros(n)
+    Aeq = np.ones([1, n])
+
+    constraints = [mu.T @ x >= mu.T @ x_mkt,
+                   Aeq @ x == 1,
+                   Aeq @ y <= k,
+                   x <= y,
+                   x >= lb]
+
+    prob = cp.Problem(cp.Minimize(cp.quad_form(x - x_mkt, Q)),
+                      constraints)
+    prob.solve(verbose=False, solver=cp.GUROBI)
+    
+    return x.value

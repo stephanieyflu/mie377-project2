@@ -8,6 +8,11 @@ def project_function(periodReturns, periodFactRet):
     :param periodFactRet:
     :return: the allocation as a vector
     """
-    Strategy = OLS_MVO()
-    x = Strategy.execute_strategy(periodReturns, periodFactRet)
+    # For BSS
+    U = 5
+    L = 0
+    K = 3
+
+    Strategy = Mean_Variance_TE()
+    x = Strategy.execute_strategy(periodReturns, periodFactRet, k=20)
     return x

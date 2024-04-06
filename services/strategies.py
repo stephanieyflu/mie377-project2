@@ -67,3 +67,58 @@ class OLS_MVO:
         mu, Q = OLS(returns, factRet)
         x = MVO(mu, Q)
         return x
+
+class BSS_MVO:
+    """
+    uses BSS to estimate the covariance matrix and expected return
+    and MVO with cardinality constraints
+    """
+
+    def __init__(self, NumObs=36):
+        self.NumObs = NumObs  # number of observations to use
+
+    def execute_strategy(self, periodReturns, factorReturns, U, L, K):
+        """
+        executes the portfolio allocation strategy based on the parameters in the __init__
+
+        :param periodReturns:
+        :param factorReturns:
+
+        :return: x
+        """
+        T, n = periodReturns.shape
+        # get the last T observations
+        returns = periodReturns.iloc[(-1) * self.NumObs:, :]
+        factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
+        mu, Q = BSS(returns, factRet, U, L, K)
+        x = MVO(mu, Q)
+        return x
+    
+
+class Mean_Variance_TE:
+    """_summary_
+    """
+
+    def __init__(self, NumObs=36):
+        self.NumObs = NumObs  # number of observations to use
+
+    def execute_strategy(self, periodReturns, factorReturns, k=10):
+        """
+        executes the portfolio allocation strategy based on the parameters in the __init__
+
+        :param periodReturns:
+        :param factorReturns:
+
+        :return: x
+        """
+        T, n = periodReturns.shape
+        # get the last T observations
+        returns = periodReturns.iloc[(-1) * self.NumObs:, :]
+        factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
+        
+        mu, Q = OLS(returns, factRet)
+
+        x_mkt = market_cap(factRet['Mkt_RF'].values, returns.values)
+
+        x = MV_TE(x_mkt, mu, Q, k)
+        return x

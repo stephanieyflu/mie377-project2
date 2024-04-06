@@ -2,9 +2,9 @@ import cvxpy as cp
 import numpy as np
 
 
-def MVO(mu, Q):
+def MVO(mu, Q, x0, min_to):
     """
-    #---------------------------------------------------------------------- Use this function to construct an example of a MVO portfolio.
+    # Use this function to construct an example of a MVO portfolio.
     #
     # An example of an MVO implementation is given below. You can use this
     # version of MVO if you like, but feel free to modify this code as much
@@ -37,11 +37,24 @@ def MVO(mu, Q):
 
     # Define and solve using CVXPY
     x = cp.Variable(n)
-    prob = cp.Problem(cp.Minimize((1 / 2) * cp.quad_form(x, Q)),
-                      [A @ x <= b,
-                       Aeq @ x == beq,
-                       x >= lb])
+
+    objective = (1 / 2) * cp.quad_form(x, Q)
+    constraints = [A @ x <= b, Aeq @ x == beq, x >= lb]
+    
+    if min_to:
+        z = cp.Variable(n)
+        objective = (1/2) * cp.quad_form(x, Q) + cp.sum(z)
+        constraints = [A @ x <= b, 
+                       Aeq @ x == beq, 
+                       x >= lb,
+                       z >= lb,
+                       x - x0 <= z,
+                       x - x0 >= -z]
+
+    prob = cp.Problem(cp.Minimize(objective),
+                      constraints)
     prob.solve(verbose=False)
+
     return x.value
 
 
@@ -82,7 +95,7 @@ def market_cap(r_mkt, R):
     return x.value
 
 
-def MV_TE(x_mkt, mu, Q, k):
+def MV_TE(x_mkt, mu, Q, k, x0, min_to):
     n = len(mu)
 
     x = cp.Variable(n)
@@ -91,14 +104,27 @@ def MV_TE(x_mkt, mu, Q, k):
     lb = np.zeros(n)
     Aeq = np.ones([1, n])
 
+    objective = cp.quad_form(x - x_mkt, Q)
     constraints = [mu.T @ x >= mu.T @ x_mkt,
                    Aeq @ x == 1,
                    Aeq @ y <= k,
                    x <= y,
                    x >= lb]
+    
+    if min_to:
+        z = cp.Variable(n)
+        objective = cp.quad_form(x - x_mkt, Q) + cp.sum(z)
+        constraints = [mu.T @ x >= mu.T @ x_mkt,
+                       Aeq @ x == 1,
+                       Aeq @ y <= k,
+                       x <= y,
+                       x >= lb,
+                       z >= lb,
+                       x - x0 <= z,
+                       x - x0 >= -z]
 
-    prob = cp.Problem(cp.Minimize(cp.quad_form(x - x_mkt, Q)),
+    prob = cp.Problem(cp.Minimize(objective),
                       constraints)
-    prob.solve(verbose=False, solver=cp.GUROBI)
+    prob.solve(verbose=False)
     
     return x.value

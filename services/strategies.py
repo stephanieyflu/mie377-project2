@@ -77,7 +77,7 @@ class BSS_MVO:
     def __init__(self, NumObs=36):
         self.NumObs = NumObs  # number of observations to use
 
-    def execute_strategy(self, periodReturns, factorReturns, U, L, K):
+    def execute_strategy(self, periodReturns, factorReturns, U, L, K, x0, min_to=False):
         """
         executes the portfolio allocation strategy based on the parameters in the __init__
 
@@ -91,7 +91,7 @@ class BSS_MVO:
         returns = periodReturns.iloc[(-1) * self.NumObs:, :]
         factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
         mu, Q = BSS(returns, factRet, U, L, K)
-        x = MVO(mu, Q)
+        x = MVO(mu, Q, x0, min_to)
         return x
     
 
@@ -102,7 +102,7 @@ class Mean_Variance_TE:
     def __init__(self, NumObs=36):
         self.NumObs = NumObs  # number of observations to use
 
-    def execute_strategy(self, periodReturns, factorReturns, k=10):
+    def execute_strategy(self, periodReturns, factorReturns, x0, k=10, min_to=False):
         """
         executes the portfolio allocation strategy based on the parameters in the __init__
 
@@ -120,5 +120,33 @@ class Mean_Variance_TE:
 
         x_mkt = market_cap(factRet['Mkt_RF'].values, returns.values)
 
-        x = MV_TE(x_mkt, mu, Q, k)
+        x = MV_TE(x_mkt, mu, Q, k, x0, min_to)
+        return x
+    
+
+class PCA_MVO:
+    """
+    uses PCA to estimate the covariance matrix and expected return
+    and MVO with cardinality constraints
+    """
+
+    def __init__(self, NumObs=36):
+        self.NumObs = NumObs  # number of observations to use
+
+    def execute_strategy(self, periodReturns, x0, p=3, min_to=False):
+        """
+        executes the portfolio allocation strategy based on the parameters in the __init__
+
+        :param factorReturns:
+        :param periodReturns:
+        :param NumObs:
+        :param p: number of PCs to select as factors
+
+        :return: x
+        """
+        T, n = periodReturns.shape
+        # get the last T observations
+        returns = periodReturns.iloc[(-1) * self.NumObs:, :]
+        mu, Q = PCA(returns, p=p)
+        x = MVO(mu, Q, x0, min_to)
         return x

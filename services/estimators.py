@@ -136,7 +136,7 @@ def BSS(returns, factRet, U, L, K):
         constraints = [U*y >= Bi, 
                        L*y <= Bi,
                        sum(y) <= K
-                       ] 
+                       ]
 
         prob = cp.Problem(obj, constraints)
         prob.solve(verbose=False, solver=cp.GUROBI)

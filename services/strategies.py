@@ -67,3 +67,67 @@ class OLS_MVO:
         mu, Q = OLS(returns, factRet)
         x = MVO(mu, Q)
         return x
+
+class RP:
+
+    def __init__(self, NumObs=36):
+        self.NumObs = NumObs  # number of observations to use
+
+    def execute_strategy(self, periodReturns, factorReturns, c):
+        """
+        executes the portfolio allocation strategy based on the parameters in the __init__
+
+        :param factorReturns:
+        :param periodReturns:
+        :return:x
+        """
+        T, n = periodReturns.shape
+        # get the last T observations
+        returns = periodReturns.iloc[(-1) * self.NumObs:, :]
+        factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
+        mu, Q = OLS(returns, factRet)
+        x = risk_parity(mu, Q, c)
+        return x
+    
+class RP_new:
+
+    def __init__(self, NumObs=36):
+        self.NumObs = NumObs  # number of observations to use
+
+    def execute_strategy(self, periodReturns, factorReturns, llambda, c):
+        """
+        executes the portfolio allocation strategy based on the parameters in the __init__
+
+        :param factorReturns:
+        :param periodReturns:
+        :return:x
+        """
+        T, n = periodReturns.shape
+        # get the last T observations
+        returns = periodReturns.iloc[(-1) * self.NumObs:, :]
+        factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
+        mu, Q = OLS(returns, factRet)
+        x = rp_new(mu, Q, llambda, c)
+        return x
+    
+
+class GRP:
+
+    def __init__(self, NumObs=36):
+        self.NumObs = NumObs  # number of observations to use
+
+    def execute_strategy(self, periodReturns, factorReturns, c, llambda):
+        """
+        executes the portfolio allocation strategy based on the parameters in the __init__
+
+        :param factorReturns:
+        :param periodReturns:
+        :return:x
+        """
+        T, n = periodReturns.shape
+        # get the last T observations
+        returns = periodReturns.iloc[(-1) * self.NumObs:, :]
+        factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
+        mu, Q = OLS(returns, factRet)
+        x = grp(mu, Q, c, llambda)
+        return x

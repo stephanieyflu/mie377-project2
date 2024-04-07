@@ -1,10 +1,16 @@
 import cvxpy as cp
 import numpy as np
+from scipy.stats import chi2
 
 
-def MVO(mu, Q, x0, min_to):
+def MVO(mu, 
+        Q, 
+        min_to, x0,
+        robust, NumObs, alpha, llambda, 
+        card, L, U, K):
     """
-    # Use this function to construct an example of a MVO portfolio.
+    #----------------------------------------------------------------------
+    Use this function to construct an example of a MVO portfolio.
     #
     # An example of an MVO implementation is given below. You can use this
     # version of MVO if you like, but feel free to modify this code as much
@@ -16,6 +22,20 @@ def MVO(mu, Q, x0, min_to):
 
     # *************** WRITE YOUR CODE HERE ***************
     #----------------------------------------------------------------------
+    
+    Returns portfolio weights based on MVO.
+
+    Inputs:
+        mu (np.ndarray): n x 1 vector of expected asset returns
+        Q (np.ndarray): n x n matrix of asset covariances
+        robust (bool): flag for selecting robust MVO
+        T (int): number of observations
+        alpha (float): alpha value for ellipsoidal robust MVO
+        llambda (float): lambda value for ellipsoidal robust MVO
+    
+    Returns:
+        x (np.ndarray): n x 1 vector of estimated asset weights for the market portfolio
+
     """
 
     # Find the total number of assets
@@ -31,19 +51,54 @@ def MVO(mu, Q, x0, min_to):
     A = -1 * mu.T
     b = -1 * targetRet
 
-    # constrain weights to sum to 1
+    # Constrain weights to sum to 1
     Aeq = np.ones([1, n])
     beq = 1
 
     # Define and solve using CVXPY
     x = cp.Variable(n)
 
-    objective = (1 / 2) * cp.quad_form(x, Q)
-    constraints = [A @ x <= b, Aeq @ x == beq, x >= lb]
+    if not robust and not card:
+        objective = (1 / 2) * cp.quad_form(x, Q)
+        constraints = [A @ x <= b,
+                       Aeq @ x == beq,
+                       x >= lb]
+        
+    elif robust and not card:
+        # Calculate theta and epsilon for ellipsoidal robust MVO
+        theta = np.sqrt((1/NumObs) * np.multiply(np.diag(Q), np.eye(n)))
+        epsilon = np.sqrt(chi2.ppf(alpha, n))
+        
+        objective = ((1 / 2) * cp.quad_form(x, Q)) + (llambda * A @ x) + (epsilon * cp.norm(theta @ x, p=2))
+        constraints = [Aeq @ x == beq,
+                       x >= lb]
     
-    if min_to:
+    elif not robust and card:
+        y = cp.Variable(n, boolean = True)
+        objective = (1 / 2) * cp.quad_form(x, Q)
+        constraints = [A @ x <= b,
+                       Aeq @ x == beq,
+                       x >= lb,
+                       (cp.sum(y) <= K),
+                       (x >= L*y), 
+                       (x <= U*y)]
+    
+    elif robust and card:
+        y = cp.Variable(n, boolean = True)
+        # Calculate theta and epsilon for ellipsoidal robust MVO
+        theta = np.sqrt((1/NumObs) * np.multiply(np.diag(Q), np.eye(n)))
+        epsilon = np.sqrt(chi2.ppf(alpha, n))
+        
+        objective = ((1 / 2) * cp.quad_form(x, Q)) + (llambda * A @ x) + (epsilon * cp.norm(theta @ x, p=2))
+        constraints = [Aeq @ x == beq,
+                       x >= lb,
+                       (cp.sum(y) <= K),
+                       (x >= L*y), 
+                       (x <= U*y)]
+    
+    elif min_to:
         z = cp.Variable(n)
-        objective = (1/2) * cp.quad_form(x, Q) + cp.sum(z)
+        objective = (1 / 2) * cp.quad_form(x, Q) + cp.sum(z)
         constraints = [A @ x <= b, 
                        Aeq @ x == beq, 
                        x >= lb,
@@ -51,8 +106,7 @@ def MVO(mu, Q, x0, min_to):
                        x - x0 <= z,
                        x - x0 >= -z]
 
-    prob = cp.Problem(cp.Minimize(objective),
-                      constraints)
+    prob = cp.Problem(cp.Minimize(objective), constraints)
     prob.solve(verbose=False)
 
     return x.value

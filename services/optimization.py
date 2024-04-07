@@ -5,7 +5,7 @@ from scipy.stats import chi2
 
 def MVO(mu, 
         Q, 
-        min_to=False, x0=[],
+        min_to=False, llambda_to=1, x0=[],
         robust=False, NumObs=36, alpha=0.95, llambda=1, 
         card=False, L_c=0.3, U_c=1, K_c=10):
     """
@@ -98,7 +98,7 @@ def MVO(mu,
     
     elif min_to:
         z = cp.Variable(n)
-        objective = (1 / 2) * cp.quad_form(x, Q) + cp.sum(z)
+        objective = ((1 / 2) * cp.quad_form(x, Q)) + (llambda_to * cp.sum(z))
         constraints = [A @ x <= b, 
                        Aeq @ x == beq, 
                        x >= lb,

@@ -77,7 +77,7 @@ class BSS_MVO:
     def __init__(self, NumObs=36):
         self.NumObs = NumObs  # number of observations to use
 
-    def execute_strategy(self, periodReturns, factorReturns, U, L, K, x0=[], min_to=False):
+    def execute_strategy(self, periodReturns, factorReturns, U, L, K, llambda_to=1, x0=[], min_to=False):
         """
         executes the portfolio allocation strategy based on the parameters in the __init__
 
@@ -91,7 +91,7 @@ class BSS_MVO:
         returns = periodReturns.iloc[(-1) * self.NumObs:, :]
         factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
         mu, Q = BSS(returns, factRet, U, L, K)
-        x = MVO(mu, Q, min_to=min_to, x0=x0)
+        x = MVO(mu, Q, min_to=min_to, llambda_to=llambda_to, x0=x0)
         return x
     
 

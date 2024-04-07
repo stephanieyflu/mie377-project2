@@ -5,9 +5,9 @@ from scipy.stats import chi2
 
 def MVO(mu, 
         Q, 
-        min_to, x0,
-        robust, NumObs, alpha, llambda, 
-        card, L, U, K):
+        min_to=False, x0=[],
+        robust=False, NumObs=36, alpha=0.95, llambda=1, 
+        card=False, L_c=0.3, U_c=1, K_c=10):
     """
     #----------------------------------------------------------------------
     Use this function to construct an example of a MVO portfolio.
@@ -58,7 +58,7 @@ def MVO(mu,
     # Define and solve using CVXPY
     x = cp.Variable(n)
 
-    if not robust and not card:
+    if not min_to and not robust and not card:
         objective = (1 / 2) * cp.quad_form(x, Q)
         constraints = [A @ x <= b,
                        Aeq @ x == beq,
@@ -79,9 +79,9 @@ def MVO(mu,
         constraints = [A @ x <= b,
                        Aeq @ x == beq,
                        x >= lb,
-                       (cp.sum(y) <= K),
-                       (x >= L*y), 
-                       (x <= U*y)]
+                       (cp.sum(y) <= K_c),
+                       (x >= L_c*y), 
+                       (x <= U_c*y)]
     
     elif robust and card:
         y = cp.Variable(n, boolean = True)
@@ -92,9 +92,9 @@ def MVO(mu,
         objective = ((1 / 2) * cp.quad_form(x, Q)) + (llambda * A @ x) + (epsilon * cp.norm(theta @ x, p=2))
         constraints = [Aeq @ x == beq,
                        x >= lb,
-                       (cp.sum(y) <= K),
-                       (x >= L*y), 
-                       (x <= U*y)]
+                       (cp.sum(y) <= K_c),
+                       (x >= L_c*y), 
+                       (x <= U_c*y)]
     
     elif min_to:
         z = cp.Variable(n)
@@ -149,7 +149,7 @@ def market_cap(r_mkt, R):
     return x.value
 
 
-def MV_TE(x_mkt, mu, Q, k, x0, min_to):
+def MV_TE(x_mkt, mu, Q, k, x0=[], min_to=False):
     n = len(mu)
 
     x = cp.Variable(n)

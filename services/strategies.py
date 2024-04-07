@@ -77,7 +77,7 @@ class BSS_MVO:
     def __init__(self, NumObs=36):
         self.NumObs = NumObs  # number of observations to use
 
-    def execute_strategy(self, periodReturns, factorReturns, U, L, K, x0, min_to=False):
+    def execute_strategy(self, periodReturns, factorReturns, U, L, K, x0=[], min_to=False):
         """
         executes the portfolio allocation strategy based on the parameters in the __init__
 
@@ -91,7 +91,7 @@ class BSS_MVO:
         returns = periodReturns.iloc[(-1) * self.NumObs:, :]
         factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
         mu, Q = BSS(returns, factRet, U, L, K)
-        x = MVO(mu, Q, x0, min_to)
+        x = MVO(mu, Q, min_to=min_to, x0=x0)
         return x
     
 
@@ -102,7 +102,7 @@ class Mean_Variance_TE:
     def __init__(self, NumObs=36):
         self.NumObs = NumObs  # number of observations to use
 
-    def execute_strategy(self, periodReturns, factorReturns, x0, k=10, min_to=False):
+    def execute_strategy(self, periodReturns, factorReturns, k=10, x0=[], min_to=False):
         """
         executes the portfolio allocation strategy based on the parameters in the __init__
 
@@ -120,7 +120,7 @@ class Mean_Variance_TE:
 
         x_mkt = market_cap(factRet['Mkt_RF'].values, returns.values)
 
-        x = MV_TE(x_mkt, mu, Q, k, x0, min_to)
+        x = MV_TE(x_mkt, mu, Q, k, x0=x0, min_to=min_to)
         return x
     
 
@@ -143,9 +143,9 @@ class PCA_MVO:
                          alpha=0.95, 
                          llambda=1, 
                          card=False, 
-                         L=0.3, 
-                         U=1, 
-                         K=10):
+                         L_c=0.3, 
+                         U_c=1, 
+                         K_c=10):
         """
         executes the portfolio allocation strategy based on the parameters in the __init__
 
@@ -154,7 +154,7 @@ class PCA_MVO:
         :param NumObs:
         :param p: number of PCs to select as factors
         :param robust:
-        :param T:
+        :param NumObs:
         :param alpha:
         :param llambda:
         :param card:
@@ -167,5 +167,5 @@ class PCA_MVO:
         # get the last T observations
         returns = periodReturns.iloc[(-1) * NumObs:, :]
         mu, Q = PCA(returns, p=p)
-        x = MVO(mu, Q, min_to=min_to, x0=x0, robust=robust, NumObs=NumObs, alpha=alpha, llambda=llambda, card=card, L=L, U=U, K=K)
+        x = MVO(mu, Q, min_to=min_to, x0=x0, robust=robust, NumObs=NumObs, alpha=alpha, llambda=llambda, card=card, L_c=L_c, U_c=U_c, K_c=K_c)
         return x

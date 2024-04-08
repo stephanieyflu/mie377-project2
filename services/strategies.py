@@ -110,6 +110,32 @@ class RP_new:
         x = rp_new(mu, Q, llambda, c)
         return x
     
+class MVO_CC_minT:
+    """
+    uses all 8 factors to estimate the covariance matrix and expected return
+    and MVO with buy-in threshold constraints and # of assets limit, with 
+    min turnover added to objective
+    """
+
+    def __init__(self, NumObs=36):
+        self.NumObs = NumObs  # number of observations to use
+
+    def execute_strategy(self, periodReturns, factorReturns, x0, L=0.03, U=1, K=10, llambda = 0.1):
+        """
+        executes the portfolio allocation strategy based on the parameters in the __init__
+
+        :param factorReturns:
+        :param periodReturns:
+        :return:x
+        """
+        T, n = periodReturns.shape
+        # get the last T observations
+        returns = periodReturns.iloc[(-1) * self.NumObs:, :]
+        factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
+        mu, Q = OLS(returns, factRet)
+        x = MVO_card_minT(mu, Q, x0, L, U, K, llambda) 
+        return x
+    
 
 class GRP:
 

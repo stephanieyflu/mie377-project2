@@ -180,25 +180,56 @@ def rp_new(mu, Q, llambda, c):
     return x
 
 
-# def black_litterman(periodReturns, factorReturns, NumObs, mu, Q, llambda):
+def MVO_card_minT(mu, Q, x0 = [], L=0.03, U=1, K=10, llambda = 0.1):
 
-#     # Find market weights
-#     T, n = periodReturns.shape
+    '''
+    Returns estimated market portfolio weights.
 
-#     # get the last T observations
-#     returns = periodReturns.iloc[(-1) * NumObs:, :]
-#     factRet = factorReturns.iloc[(-1) * NumObs:, :]
-#     x_mkt = market_cap(factRet['Mkt_RF'].values, returns.values)
+    Inputs:
+        L: lower bound of buy-in threshold (number) 
+        U: upper bound of buy-in threshold (number)
+        K: limit of # of assets you want in porftolio (number)
+        llambda: coefficient of turnover function
+    
+    Returns:
+        x (np.ndarray): n x 1 vector of estimated asset weights for the market portfolio
+    '''
 
-#     llambda = mu*x_mkt - factRet['RF'] / x_mkt*Q*x_mkt
+    # Find the total number of assets
+    n = len(mu)
 
-#     pi = llambda*Q*x_mkt
+    # Set the target as the average expected return of all assets
+    targetRet = np.mean(mu)
 
-#     #Solve for mu_bar with views
+    # Disallow short sales
+    lb = np.zeros(n)
 
-#     #Use BL to solve for x
+    # Add the expected return constraint
+    A = -1 * mu.T
+    b = -1 * targetRet
 
+    # constrain weights to sum to 1
+    Aeq = np.ones([1, n])
+    beq = 1
 
+    # Define and solve using Gurobi
+    x = cp.Variable(n)
+    y = cp.Variable(n, boolean = True)
+    z = cp.Variable(n)
+
+    prob = cp.Problem(cp.Minimize((1 / 2) * cp.quad_form(x, Q) + llambda*cp.sum(z)),
+                      [A @ x <= b,
+                       Aeq @ x == beq,
+                       x >= lb,
+                       z >= lb,
+                       (cp.sum(y) <= K),
+                       (x >= L*y), 
+                       (x <= U*y),
+                       (x - x0) <= z,
+                       (x - x0) >= -z])
+
+    prob.solve(solver=cp.GUROBI)
+    return x.value
 
 
 

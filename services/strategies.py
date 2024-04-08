@@ -77,7 +77,10 @@ class BSS_MVO:
     def __init__(self, NumObs=36):
         self.NumObs = NumObs  # number of observations to use
 
-    def execute_strategy(self, periodReturns, factorReturns, U, L, K, llambda_to=1, x0=[], min_to=False):
+    def execute_strategy(self, periodReturns, factorReturns, 
+                         NumObs=36, L=0, U=5, K=3,
+                         min_to=False, llambda_to=1, x0=[],
+                         card=False, L_c=0.3, U_c=1, K_c=10):
         """
         executes the portfolio allocation strategy based on the parameters in the __init__
 
@@ -88,10 +91,13 @@ class BSS_MVO:
         """
         T, n = periodReturns.shape
         # get the last T observations
-        returns = periodReturns.iloc[(-1) * self.NumObs:, :]
-        factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
-        mu, Q = BSS(returns, factRet, U, L, K)
-        x = MVO(mu, Q, min_to=min_to, llambda_to=llambda_to, x0=x0)
+        returns = periodReturns.iloc[(-1) * NumObs:, :]
+        factRet = factorReturns.iloc[(-1) * NumObs:, :]
+        mu, Q = BSS(returns, factRet, L, U, K)
+
+        x = MVO(mu, Q, 
+                min_to=min_to, llambda_to=llambda_to, x0=x0, 
+                card=card, L_c=L_c, U_c=U_c, K_c=K_c)
         return x
     
 
@@ -133,19 +139,10 @@ class PCA_MVO:
     def __init__(self, NumObs=36):
         self.NumObs = NumObs  # number of observations to use
 
-    def execute_strategy(self, 
-                         periodReturns, 
-                         NumObs=36, 
-                         p=3, 
-                         min_to=False,
-                         x0=[],
-                         robust=False, 
-                         alpha=0.95, 
-                         llambda=1, 
-                         card=False, 
-                         L_c=0.3, 
-                         U_c=1, 
-                         K_c=10):
+    def execute_strategy(self, periodReturns, 
+                         NumObs=36, p=3, 
+                         min_to=False, llambda_to=1, x0=[],
+                         card=False, L_c=0.3, U_c=1, K_c=10):
         """
         executes the portfolio allocation strategy based on the parameters in the __init__
 
@@ -167,5 +164,8 @@ class PCA_MVO:
         # get the last T observations
         returns = periodReturns.iloc[(-1) * NumObs:, :]
         mu, Q = PCA(returns, p=p)
-        x = MVO(mu, Q, min_to=min_to, x0=x0, robust=robust, NumObs=NumObs, alpha=alpha, llambda=llambda, card=card, L_c=L_c, U_c=U_c, K_c=K_c)
+        
+        x = MVO(mu, Q, 
+                min_to=min_to, llambda_to=llambda_to, x0=x0, 
+                card=card, L_c=L_c, U_c=U_c, K_c=K_c)
         return x

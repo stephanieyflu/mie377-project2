@@ -3,8 +3,7 @@ import numpy as np
 from scipy.stats import chi2
 
 
-def MVO(mu, 
-        Q, 
+def MVO(mu, Q, 
         min_to=False, llambda_to=1, x0=[],
         robust=False, NumObs=36, alpha=0.95, llambda=1, 
         card=False, L_c=0.3, U_c=1, K_c=10):
@@ -63,40 +62,23 @@ def MVO(mu,
         constraints = [A @ x <= b,
                        Aeq @ x == beq,
                        x >= lb]
-        
-    elif robust and not card:
-        # Calculate theta and epsilon for ellipsoidal robust MVO
-        theta = np.sqrt((1/NumObs) * np.multiply(np.diag(Q), np.eye(n)))
-        epsilon = np.sqrt(chi2.ppf(alpha, n))
-        
-        objective = ((1 / 2) * cp.quad_form(x, Q)) + (llambda * A @ x) + (epsilon * cp.norm(theta @ x, p=2))
-        constraints = [Aeq @ x == beq,
-                       x >= lb]
     
-    elif not robust and card:
-        y = cp.Variable(n, boolean = True)
-        objective = (1 / 2) * cp.quad_form(x, Q)
-        constraints = [A @ x <= b,
-                       Aeq @ x == beq,
+    elif min_to and not robust and card:
+        y = cp.Variable(n, boolean=True)
+        z = cp.Variable(n)
+
+        objective = ((1 / 2) * cp.quad_form(x, Q)) + (llambda_to * cp.sum(z))
+        constraints = [A @ x <= b, 
+                       Aeq @ x == beq, 
                        x >= lb,
+                       z >= lb,
+                       x - x0 <= z,
+                       x - x0 >= -z,
                        (cp.sum(y) <= K_c),
                        (x >= L_c*y), 
                        (x <= U_c*y)]
-    
-    elif robust and card:
-        y = cp.Variable(n, boolean = True)
-        # Calculate theta and epsilon for ellipsoidal robust MVO
-        theta = np.sqrt((1/NumObs) * np.multiply(np.diag(Q), np.eye(n)))
-        epsilon = np.sqrt(chi2.ppf(alpha, n))
-        
-        objective = ((1 / 2) * cp.quad_form(x, Q)) + (llambda * A @ x) + (epsilon * cp.norm(theta @ x, p=2))
-        constraints = [Aeq @ x == beq,
-                       x >= lb,
-                       (cp.sum(y) <= K_c),
-                       (x >= L_c*y), 
-                       (x <= U_c*y)]
-    
-    elif min_to:
+
+    elif min_to and not robust and not card:
         z = cp.Variable(n)
         objective = ((1 / 2) * cp.quad_form(x, Q)) + (llambda_to * cp.sum(z))
         constraints = [A @ x <= b, 
@@ -105,6 +87,38 @@ def MVO(mu,
                        z >= lb,
                        x - x0 <= z,
                        x - x0 >= -z]
+        
+    elif not min_to and robust and not card:
+        # Calculate theta and epsilon for ellipsoidal robust MVO
+        theta = np.sqrt((1/NumObs) * np.multiply(np.diag(Q), np.eye(n)))
+        epsilon = np.sqrt(chi2.ppf(alpha, n))
+        
+        objective = ((1 / 2) * cp.quad_form(x, Q)) + (llambda * A @ x) + (epsilon * cp.norm(theta @ x, p=2))
+        constraints = [Aeq @ x == beq,
+                       x >= lb]
+    
+    elif not min_to and not robust and card:
+        y = cp.Variable(n, boolean=True)
+        objective = (1 / 2) * cp.quad_form(x, Q)
+        constraints = [A @ x <= b,
+                       Aeq @ x == beq,
+                       x >= lb,
+                       (cp.sum(y) <= K_c),
+                       (x >= L_c*y), 
+                       (x <= U_c*y)]
+    
+    elif not min_to and robust and card:
+        y = cp.Variable(n, boolean=True)
+        # Calculate theta and epsilon for ellipsoidal robust MVO
+        theta = np.sqrt((1/NumObs) * np.multiply(np.diag(Q), np.eye(n)))
+        epsilon = np.sqrt(chi2.ppf(alpha, n))
+        
+        objective = ((1 / 2) * cp.quad_form(x, Q)) + (llambda * A @ x) + (epsilon * cp.norm(theta @ x, p=2))
+        constraints = [Aeq @ x == beq,
+                       x >= lb,
+                       (cp.sum(y) <= K_c),
+                       (x >= L_c*y), 
+                       (x <= U_c*y)]
 
     prob = cp.Problem(cp.Minimize(objective), constraints)
     prob.solve(verbose=False)

@@ -114,7 +114,7 @@ def PCA(returns, p=3):
     return mu, Q
 
 
-def BSS(returns, factRet, U, L, K):
+def BSS(returns, factRet, L, U, K):
     # Number of observations and factors
     [T, p] = factRet.shape
     [T, n] = returns.shape

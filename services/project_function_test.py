@@ -163,6 +163,8 @@ def find_params(params_ranges, strategies, periodReturns, periodFactRet, T, x0):
     param8s = params_ranges[8]
     param9s = params_ranges[9]
 
+    counter = 0
+
     for i0 in param0s:
         Strategy = strategies[i0]
         
@@ -215,6 +217,9 @@ def find_params(params_ranges, strategies, periodReturns, periodFactRet, T, x0):
                                     param4s_save.append(i4)
                                     param5s_save.append(i5)
                                     param6s_save.append(i6)
+
+                                    counter += 1
+                                    print('Iteration {} done (PCA)'.format(counter))
             
             # Save the parameters for each PCA_MVO Strategy iteration
             df_0 = pd.DataFrame({'param0': param0s_save,
@@ -269,6 +274,9 @@ def find_params(params_ranges, strategies, periodReturns, periodFactRet, T, x0):
                                             param7s_save.append(i7)
                                             param8s_save.append(i8)
                                             param9s_save.append(i9)
+
+                                            counter += 1
+                                            print('Iteration {} done (BSS)'.format(counter))
             
             # Save the parameters for each PCA_MVO Strategy iteration
             df_1 = pd.DataFrame({'param0': param0s_save,

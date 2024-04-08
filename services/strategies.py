@@ -131,3 +131,79 @@ class GRP:
         mu, Q = OLS(returns, factRet)
         x = grp(mu, Q, c, llambda)
         return x
+    
+class OLS_CAPM:
+    """
+    uses the market factor to estimate the covariance matrix and expected return
+    and regular MVO
+    """
+
+    def __init__(self, NumObs=36):
+        self.NumObs = NumObs  # number of observations to use
+
+    def execute_strategy(self, periodReturns, factorReturns):
+        """
+        executes the portfolio allocation strategy based on the parameters in the __init__
+
+        :param factorReturns:
+        :param periodReturns:
+        :return: x
+        """
+        T, n = periodReturns.shape
+        # get the last T observations
+        returns = periodReturns.iloc[(-1) * self.NumObs:, :]
+        factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
+        mu, Q = OLS(returns, factRet[["Mkt_RF"]])
+        x = MVO(mu, Q)
+        return x
+    
+class OLS_FF:
+    """
+    uses the Fama-French factors to estimate the covariance matrix and expected return
+    and regular MVO
+    """
+
+    def __init__(self, NumObs=36):
+        self.NumObs = NumObs  # number of observations to use
+
+    def execute_strategy(self, periodReturns, factorReturns):
+        """
+        executes the portfolio allocation strategy based on the parameters in the __init__
+
+        :param factorReturns:
+        :param periodReturns:
+        :return: x
+        """
+        T, n = periodReturns.shape
+        # get the last T observations
+        returns = periodReturns.iloc[(-1) * self.NumObs:, :]
+        factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
+        mu, Q = OLS(returns, factRet[["Mkt_RF", "SMB", "HML"]])
+        x = MVO(mu, Q)
+        return x
+    
+class OLS_FF5:
+    """
+    Fama-French 5 Factor model, which
+    uses 'Mkt_RF', 'SMB', 'HML', 'RMW', 'CMA' factors to estimate the 
+    covariance and expected return     
+    """
+
+    def __init__(self, NumObs=36):
+        self.NumObs = NumObs  # number of observations to use
+
+    def execute_strategy(self, periodReturns, factorReturns):
+        """
+        executes the portfolio allocation strategy based on the parameters in the __init__
+
+        :param factorReturns:
+        :param periodReturns:
+        :return:x
+        """
+        T, n = periodReturns.shape
+        # get the last T observations
+        returns = periodReturns.iloc[(-1) * self.NumObs:, :]
+        factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
+        mu, Q = OLS(returns, factRet[["Mkt_RF", "SMB", "HML", "RMW", "CMA"]])
+        x = MVO(mu, Q)
+        return x

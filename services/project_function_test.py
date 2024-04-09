@@ -52,9 +52,11 @@ def project_function_test2(periodReturns, periodFactRet, x0):
     :param x0:
     :return: x (weight allocation as a vector)
     """
-    Strategy1 = PCA_MVO()
-    Strategy2 = BSS_MVO()
-    strategies = [Strategy1, Strategy2]
+    # Strategy1 = PCA_MVO()
+    # Strategy2 = BSS_MVO()
+    # strategies = [Strategy1, Strategy2]
+    Strategy = BSS_MVO()
+    strategies = [Strategy]
 
     T, n = periodReturns.shape
 
@@ -65,7 +67,7 @@ def project_function_test2(periodReturns, periodFactRet, x0):
         ##### Determine the optimal parameters #####
 
         # Range of parameters to test:
-        strats = [0, 1]
+        strats = [0]
         L_cs = [0.05]
         U_cs = [0.1, 0.15, 0.2, 0.25] # this
         K_cs = [15]
@@ -116,10 +118,6 @@ def project_function_test2(periodReturns, periodFactRet, x0):
         Strategy = strategies[p0]
 
         if p0 == 0:
-            x = Strategy.execute_strategy(periodReturns, NumObs=p5, p=p6, 
-                                            min_to=True, llambda_to=p4, x0=x0,
-                                            card=True, L_c=p1, U_c=p2, K_c=p3)
-        elif p0 == 1:
             x = Strategy.execute_strategy(periodReturns, periodFactRet,
                                             NumObs=p5, L=p7, U=p8, K=p9,
                                             min_to=True, llambda_to=p4, x0=x0,
@@ -141,10 +139,6 @@ def project_function_test2(periodReturns, periodFactRet, x0):
         Strategy = strategies[p0]
 
         if p0 == 0:
-            x = Strategy.execute_strategy(periodReturns, NumObs=p5, p=p6, 
-                                            min_to=True, llambda_to=p4, x0=x0,
-                                            card=True, L_c=p1, U_c=p2, K_c=p3)
-        elif p0 == 1:
             x = Strategy.execute_strategy(periodReturns, periodFactRet,
                                             NumObs=p5, L=p7, U=p8, K=p9,
                                             min_to=True, llambda_to=p4, x0=x0,
@@ -191,58 +185,7 @@ def find_params(params_ranges, strategies, periodReturns, periodFactRet, T, x0):
         param8s_save = []
         param9s_save = []
 
-        if i0 == 0: # PCA_MVO
-            for i1 in param1s:
-                for i2 in param2s:
-                    for i3 in param3s:
-                        for i4 in param4s:
-                            for i5 in param5s:
-                                for i6 in param6s:
-                                    # Preallocate space for the portfolio per period value and turnover
-                                    portfReturns = pd.DataFrame({'Returns': np.zeros(T)}, index=periodReturns.index)
-
-                                    rebalancingFreq = 6
-                                    windowSize = i5 # NumObs
-
-                                    numPeriods = (T - windowSize) // rebalancingFreq
-
-                                    for t in range(numPeriods+1):
-                                        # Subset the returns and factor returns corresponding to the current calibration period
-                                        start_index = t * rebalancingFreq
-                                        end_index = t * rebalancingFreq + windowSize
-                                        subperiodReturns = periodReturns.iloc[start_index:end_index]
-                                        if t > 0:
-                                            # Calculate the portfolio period returns
-                                            portfReturns.iloc[end_index-rebalancingFreq:end_index, portfReturns.columns.get_loc('Returns')] = subperiodReturns[-rebalancingFreq:].dot(weights)
-                                        weights = Strategy.execute_strategy(subperiodReturns, NumObs=i5, p=i6, 
-                                                                            min_to=True, llambda_to=i4, x0=x0,
-                                                                            card=True, L_c=i1, U_c=i2, K_c=i3)
-                                    
-                                    # Calculate and save the Sharpe ratio for the current combination of parameters
-                                    SR = (portfReturns.iloc[-(T-windowSize):]).mean() / (portfReturns.iloc[-(T-windowSize):]).std()
-                                    SRs.append(SR[0])
-                                    param0s_save.append(i0)
-                                    param1s_save.append(i1)
-                                    param2s_save.append(i2)
-                                    param3s_save.append(i3)
-                                    param4s_save.append(i4)
-                                    param5s_save.append(i5)
-                                    param6s_save.append(i6)
-
-                                    counter += 1
-                                    print('Iteration {} done (PCA)'.format(counter))
-            
-            # Save the parameters for each PCA_MVO Strategy iteration
-            df_0 = pd.DataFrame({'param0': param0s_save,
-                                 'param1': param1s_save,
-                                 'param2': param2s_save,
-                                 'param3': param3s_save,
-                                 'param4': param4s_save,
-                                 'param5': param5s_save,
-                                 'param6': param6s_save})
-            # plot(df, all_p)
-
-        elif i0 == 1: # BSS_MVO
+        if i0 == 0: # BSS_MVO
             for i1 in param1s:
                 for i2 in param2s:
                     for i3 in param3s:
@@ -303,22 +246,6 @@ def find_params(params_ranges, strategies, periodReturns, periodFactRet, T, x0):
 
     ##### Determine and save the optimal parameters #####
 
-    df_avg_0 = df_0.groupby(['param1', 'param2', 'param3', 'param4', 'param6'])['SR'].mean().reset_index()
-    df_avg_0.to_csv('a0.csv')
-    max_index = df_avg_0['SR'].idxmax()
-    best0_sr = df_avg_0.at[max_index, 'SR']
-    best0_param0 = 0
-    best0_param1 = df_avg_0.at[max_index, 'param1']
-    best0_param2 = df_avg_0.at[max_index, 'param2']
-    best0_param3 = df_avg_0.at[max_index, 'param3']
-    best0_param4 = df_avg_0.at[max_index, 'param4']
-    best0_param5 = 36 # did 48 for Project 1
-    best0_param6 = df_avg_0.at[max_index, 'param6']
-    best0_param7 = None
-    best0_param8 = None
-    best0_param9 = None
-
-
     df_avg_1 = df_1.groupby(['param1', 'param2', 'param3', 'param4', 'param7', 'param8', 'param9'])['SR'].mean().reset_index()
     df_avg_1.to_csv('a1.csv')
     max_index = df_avg_1['SR'].idxmax()
@@ -328,35 +255,22 @@ def find_params(params_ranges, strategies, periodReturns, periodFactRet, T, x0):
     best1_param2 = df_avg_1.at[max_index, 'param2']
     best1_param3 = df_avg_1.at[max_index, 'param3']
     best1_param4 = df_avg_1.at[max_index, 'param4']
-    best1_param5 = 36 # did 48 for Project 1
+    best1_param5 = 48
     best1_param6 = None
     best1_param7 = df_avg_1.at[max_index, 'param7']
     best1_param8 = df_avg_1.at[max_index, 'param8']
     best1_param9 = df_avg_1.at[max_index, 'param9']
 
-    if best0_sr > best1_sr:
-        best = [best0_param0, 
-                best0_param1,
-                best0_param2,
-                best0_param3,
-                best0_param4,
-                best0_param5,
-                best0_param6,
-                best0_param7,
-                best0_param8,
-                best0_param9]
-    
-    else:
-        best = [best1_param0, 
-                best1_param1,
-                best1_param2,
-                best1_param3,
-                best1_param4,
-                best1_param5,
-                best1_param6,
-                best1_param7,
-                best1_param8,
-                best1_param9]
+    best = [best1_param0, 
+            best1_param1,
+            best1_param2,
+            best1_param3,
+            best1_param4,
+            best1_param5,
+            best1_param6,
+            best1_param7,
+            best1_param8,
+            best1_param9]
 
     return best
 

@@ -186,62 +186,64 @@ def find_params(params_ranges, strategies, periodReturns, periodFactRet, T, x0):
         param9s_save = []
 
         if i0 == 0: # BSS_MVO
-            for i1 in param1s:
-                for i2 in param2s:
-                    for i3 in param3s:
-                        for i4 in param4s:
-                            for i5 in param5s:
-                                for i7 in param7s:
-                                    for i8 in param8s:
-                                        for i9 in param9s:
-                                            # Preallocate space for the portfolio per period value and turnover
-                                            portfReturns = pd.DataFrame({'Returns': np.zeros(T)}, index=periodReturns.index)
+            # Generate all combinations of parameters using NumPy meshgrid
+            grid = np.meshgrid(param1s, param2s, param3s, param4s, param5s, param7s, param8s, param9s)
+            param_combinations = np.stack(grid, axis=-1).reshape(-1, 8)
 
-                                            rebalancingFreq = 6
-                                            windowSize = i5 # NumObs
+            # Preallocate space for portfolio returns and turnovers
+            portfReturns = pd.DataFrame({'Returns': np.zeros((T, len(param_combinations)))}, index=periodReturns.index)
 
-                                            numPeriods = (T - windowSize) // rebalancingFreq
+            rebalancingFreq = 6
+            windowSize = param_combinations[:, 4]  # NumObs
 
-                                            for t in range(numPeriods+1):
-                                                # Subset the returns and factor returns corresponding to the current calibration period
-                                                start_index = t * rebalancingFreq
-                                                end_index = t * rebalancingFreq + windowSize
-                                                subperiodReturns = periodReturns.iloc[start_index:end_index]
-                                                subperiodFactRet = periodFactRet.iloc[start_index:end_index]
-                                                if t > 0:
-                                                    # Calculate the portfolio period returns
-                                                    portfReturns.iloc[end_index-rebalancingFreq:end_index, portfReturns.columns.get_loc('Returns')] = subperiodReturns[-rebalancingFreq:].dot(weights)
-                                                weights = Strategy.execute_strategy(subperiodReturns, subperiodFactRet,
-                                                                                    NumObs=i5, L=i7, U=i8, K=i9,
-                                                                                    min_to=True, llambda_to=i4, x0=x0,
-                                                                                    card=True, L_c=i1, U_c=i2, K_c=i3)
-                                            
-                                            # Calculate and save the Sharpe ratio for the current combination of parameters
-                                            SR = (portfReturns.iloc[-(T-windowSize):]).mean() / (portfReturns.iloc[-(T-windowSize):]).std()
-                                            SRs.append(SR[0])
-                                            param0s_save.append(i0)
-                                            param1s_save.append(i1)
-                                            param2s_save.append(i2)
-                                            param3s_save.append(i3)
-                                            param4s_save.append(i4)
-                                            param5s_save.append(i5)
-                                            param7s_save.append(i7)
-                                            param8s_save.append(i8)
-                                            param9s_save.append(i9)
+            numPeriods = (T - windowSize) // rebalancingFreq
 
-                                            counter += 1
-                                            print('Iteration {} done (BSS)'.format(counter))
-            
-            # Save the parameters for each PCA_MVO Strategy iteration
-            df_1 = pd.DataFrame({'param0': param0s_save,
-                                 'param1': param1s_save,
-                                 'param2': param2s_save,
-                                 'param3': param3s_save,
-                                 'param4': param4s_save,
-                                 'param5': param5s_save,
-                                 'param7': param7s_save,
-                                 'param8': param8s_save,
-                                 'param9': param9s_save})
+            for t in range(numPeriods + 1):
+                start_indices = t * rebalancingFreq
+                end_indices = t * rebalancingFreq + windowSize[:, np.newaxis]
+
+                # Subset the returns and factor returns corresponding to the current calibration period
+                subperiodReturns = periodReturns.values[start_indices:end_indices]
+                subperiodFactRet = periodFactRet.values[start_indices:end_indices]
+
+                if t > 0:
+                    # Calculate the portfolio period returns
+                    portfReturns.iloc[end_indices - rebalancingFreq, :] = np.dot(subperiodReturns[:, -rebalancingFreq:, :], weights.T)
+
+                # Execute the strategy for all parameter combinations
+                weights = Strategy.execute_strategy(subperiodReturns, subperiodFactRet,
+                                                    NumObs=param_combinations[:, 4], L=param_combinations[:, 5],
+                                                    U=param_combinations[:, 6], K=param_combinations[:, 7],
+                                                    min_to=True, llambda_to=param_combinations[:, 3], x0=x0,
+                                                    card=True, L_c=param_combinations[:, 0], U_c=param_combinations[:, 1],
+                                                    K_c=param_combinations[:, 2])
+
+            # Calculate and save the Sharpe ratio for each parameter combination
+            SR = portfReturns.mean() / portfReturns.std()
+            SRs.extend(SR)
+            param0s_save.extend([i0] * len(param_combinations))
+            param1s_save.extend(param_combinations[:, 0])
+            param2s_save.extend(param_combinations[:, 1])
+            param3s_save.extend(param_combinations[:, 2])
+            param4s_save.extend(param_combinations[:, 3])
+            param5s_save.extend(param_combinations[:, 4])
+            param7s_save.extend(param_combinations[:, 5])
+            param8s_save.extend(param_combinations[:, 6])
+            param9s_save.extend(param_combinations[:, 7])
+
+            counter += len(param_combinations)
+            print('Iteration {} done (BSS)'.format(counter))
+
+        # Save the parameters for each BSS_MVO Strategy iteration
+        df_1 = pd.DataFrame({'param0': param0s_save,
+                            'param1': param1s_save,
+                            'param2': param2s_save,
+                            'param3': param3s_save,
+                            'param4': param4s_save,
+                            'param5': param5s_save,
+                            'param7': param7s_save,
+                            'param8': param8s_save,
+                            'param9': param9s_save})
             # plot(df, all_p)               
 
     ##### Determine and save the optimal parameters #####

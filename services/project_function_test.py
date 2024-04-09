@@ -15,12 +15,12 @@ def project_function_test(periodReturns, periodFactRet, x0, params):
 
     Strategy = BSS_MVO()
     llambda_to = params[0]
-    L = params[1]
-    U = params[2]
-    K = params[3]
-    L_c = params[4]
-    U_c = params[5]
-    K_c = params[6]
+    L_c = params[1]
+    U_c = params[2]
+    K_c = params[3]
+    L = params[4]
+    U = params[5]
+    K = params[6]
     
     x = Strategy.execute_strategy(periodReturns, periodFactRet,
                                             L=L, U=U, K=K,

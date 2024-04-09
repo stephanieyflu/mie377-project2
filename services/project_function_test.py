@@ -13,22 +13,34 @@ def project_function_test(periodReturns, periodFactRet, x0, params):
     :return: the allocation as a vector
     """
 
-    # Strategy = BSS_MVO()
-    # U = params[0]
-    # L = params[1]
-    # K = params[2]
-    # min_to = params[3]
-    # x = Strategy.execute_strategy(periodReturns, periodFactRet, U=U, L=L, K=K, x0=x0, min_to=min_to)
+    Strategy = BSS_MVO()
+    llambda_to = params[0]
+    L = params[1]
+    U = params[2]
+    K = params[3]
+    L_c = params[4]
+    U_c = params[5]
+    K_c = params[6]
+    
+    x = Strategy.execute_strategy(periodReturns, periodFactRet,
+                                            L=L, U=U, K=K,
+                                            min_to=True, llambda_to=llambda_to, x0=x0,
+                                            card=True, L_c=L_c, U_c=U_c, K_c=K_c)
 
-    Strategy = Mean_Variance_TE()
-    k = params[0]
-    min_to = params[1]
-    x = Strategy.execute_strategy(periodReturns, periodFactRet, k=k, x0=x0, min_to=min_to)
+    # Strategy = Mean_Variance_TE()
+    # k = params[0]
+    # min_to = params[1]
+    # x = Strategy.execute_strategy(periodReturns, periodFactRet, k=k, x0=x0, min_to=min_to)
 
     # Strategy = PCA_MVO()
-    # p = params[0]
-    # min_to = params[1]
-    # x = Strategy.execute_strategy(periodReturns, p=p, min_to=min_to, x0=x0)
+    # L_c = params[0]
+    # U_c = params[1]
+    # K_c = params[2]
+    # min_to = params[3]
+    # llambda_to = params[4]
+    # x = Strategy.execute_strategy(periodReturns, p=3, 
+    #                                         min_to=min_to, llambda_to=llambda_to, x0=x0,
+    #                                         card=True, L_c=L_c, U_c=U_c, K_c=K_c)
 
     return x
 
@@ -54,15 +66,15 @@ def project_function_test2(periodReturns, periodFactRet, x0):
 
         # Range of parameters to test:
         strats = [0, 1]
-        L_cs = [0, 0.01, 0.02, 0.03, 0.04, 0.05]
-        U_cs = [0.1, 0.15, 0.2, 0.25, 0.3]
-        K_cs = list(range(15, 21))
-        llambdas = [0.01, 0.1, 1, 10, 100]
-        nos = [24, 36, 48]
-        ps = list(range(1, 11))
+        L_cs = [0.05]
+        U_cs = [0.1, 0.15, 0.2, 0.25] # this
+        K_cs = [15]
+        llambdas = [1, 10, 100] # this
+        nos = [24, 36, 48] # this
+        ps = list(range(2, 6))
         Ls = [0, 0.1, 0.2, 0.3, 0.4, 0.5]
         Us = list(range(1, 6))
-        Ks = list(range(1, 8))
+        Ks = list(range(1, 8)) # maybe choose 2-3 (low, medium, high)
 
         param_ranges = [strats, L_cs, U_cs, K_cs, llambdas, nos, ps, Ls, Us, Ks]
 
@@ -149,8 +161,7 @@ def find_params(params_ranges, strategies, periodReturns, periodFactRet, T, x0):
         T (int): number of data points (i.e., observations) in periodReturns
 
     Returns:
-        (best_p, best_K, best_no): best p, K, and NumObs parameters based on 
-                                    Sharpe ratio during the calibration period
+        best: 
     """
     param0s = params_ranges[0]
     param1s = params_ranges[1]

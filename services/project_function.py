@@ -1,18 +1,20 @@
 from services.strategies import *
 
 
-def project_function(periodReturns, periodFactRet, x0):
+def project_function(periodReturns, periodFactRet, x0, U, K):
     """
     Please feel free to modify this function as desired
     :param periodReturns:
     :param periodFactRet:
     :return: the allocation as a vector
     """
-    Strategy = BSS_MVO()
-    U = 5
-    L = 0
-    K = 3
-    x = Strategy.execute_strategy(periodReturns, periodFactRet, U, L, K, x0=x0, min_to=False)
+    Strategy = RP()
+    x = Strategy.execute_strategy(36, periodReturns, periodFactRet, c=5, L=0, U=U, K=K)
+    # Strategy = BSS_MVO()
+    # U = 5
+    # L = 0
+    # K = 3
+    # x = Strategy.execute_strategy(periodReturns, periodFactRet, U, L, K, x0=x0, min_to=False)
 
     # Strategy = Mean_Variance_TE()
     # x = Strategy.execute_strategy(periodReturns, periodFactRet, k=10, x0, min_to=True)

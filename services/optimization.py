@@ -2,6 +2,35 @@ import cvxpy as cp
 import numpy as np
 from scipy.stats import chi2
 
+def risk_parity(mu, Q, c):
+
+    # Find the total number of assets
+    n = len(mu)
+
+    # Disallow short sales
+    lb = np.zeros(n)
+
+    # Define and solve using CVXPY
+    x = cp.Variable(n)
+    y = cp.Variable(n)
+
+    obj = cp.Minimize(((1 / 2) * cp.quad_form(y, Q)) - c*cp.sum(cp.log(y)))
+    constraints = [y >= lb] #set constraints
+
+    prob = cp.Problem(obj, constraints)
+    prob.solve(verbose=False)
+
+    y_val = np.array(y.value)
+    y_sum = np.sum(y_val)
+
+    #print(y_sum)
+    x = y_val / y_sum
+    for i in range(n):
+        #print(y_val[i])
+        k = y_val[i] * y_sum
+        #print(k)
+
+    return x
 
 def MVO(mu, Q, 
         min_to=False, llambda_to=1, x0=[],

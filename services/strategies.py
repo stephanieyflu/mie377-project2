@@ -6,6 +6,28 @@ from services.optimization import *
 # this file will produce portfolios as outputs from data - the strategies can be implemented as classes or functions
 # if the strategies have parameters then it probably makes sense to define them as a class
 
+class RP:
+
+    def __init__(self, NumObs=36):
+        self.NumObs = NumObs  # number of observations to use
+
+    def execute_strategy(self, NumObs, periodReturns, factorReturns, c, L, U, K):
+        """
+        executes the portfolio allocation strategy based on the parameters in the __init__
+
+        :param factorReturns:
+        :param periodReturns:
+        :return:x
+        """
+        T, n = periodReturns.shape
+        # get the last T observations
+        returns = periodReturns.iloc[(-1) * NumObs:, :]
+        factRet = factorReturns.iloc[(-1) * NumObs:, :]
+        # mu, Q = OLS(returns, factRet)
+        # mu, Q = PCA(returns, p=p)
+        mu, Q = BSS(returns, factRet, L=L, U=U, K=K)
+        x = risk_parity(mu, Q, c)
+        return x
 
 def equal_weight(periodReturns):
     """

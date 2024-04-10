@@ -41,6 +41,7 @@ class HistoricalMeanVarianceOptimization:
         Q = returns.cov().values
         x = MVO(mu, Q)
 
+
         return x
 
 
@@ -73,7 +74,7 @@ class RP:
     def __init__(self, NumObs=36):
         self.NumObs = NumObs  # number of observations to use
 
-    def execute_strategy(self, periodReturns, factorReturns, c):
+    def execute_strategy(self, periodReturns, factorReturns, NumObs=36, c=5):
         """
         executes the portfolio allocation strategy based on the parameters in the __init__
 
@@ -83,8 +84,8 @@ class RP:
         """
         T, n = periodReturns.shape
         # get the last T observations
-        returns = periodReturns.iloc[(-1) * self.NumObs:, :]
-        factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
+        returns = periodReturns.iloc[(-1) * NumObs:, :]
+        factRet = factorReturns.iloc[(-1) * NumObs:, :]
         mu, Q = OLS(returns, factRet)
         x = risk_parity(mu, Q, c)
         return x
@@ -133,6 +134,21 @@ class MVO_CC_minT:
         returns = periodReturns.iloc[(-1) * self.NumObs:, :]
         factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
         mu, Q = OLS(returns, factRet)
+        x = MVO_card_minT(mu, Q, x0, L, U, K, llambda) 
+        return x
+    
+class MVO_CC_minT_new:
+
+    def __init__(self, NumObs=36):
+        self.NumObs = NumObs  # number of observations to use
+
+    def execute_strategy(self, periodReturns, factorReturns, NumObs=36, x0=[], L=0.3, U=1, K=10, llambda = 0.1, L_b=0.01, U_b=1, K_b=1):
+      
+        T, n = periodReturns.shape
+        # get the last T observations
+        returns = periodReturns.iloc[(-1) * NumObs:, :]
+        factRet = factorReturns.iloc[(-1) * NumObs:, :]
+        mu, Q = BSS(returns, factRet, L_b, U_b, K_b)
         x = MVO_card_minT(mu, Q, x0, L, U, K, llambda) 
         return x
     
@@ -232,4 +248,24 @@ class OLS_FF5:
         factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
         mu, Q = OLS(returns, factRet[["Mkt_RF", "SMB", "HML", "RMW", "CMA"]])
         x = MVO(mu, Q)
+        return x
+    
+class Lasso_RP():
+    def __init__(self, NumObs=36):
+        self.NumObs = NumObs  # number of observations to use
+
+    def execute_strategy(self, periodReturns, factorReturns, S, c):
+        """
+        executes the portfolio allocation strategy based on the parameters in the __init__
+
+        :param factorReturns:
+        :param periodReturns:
+        :return:x
+        """
+        T, n = periodReturns.shape
+        # get the last T observations
+        returns = periodReturns.iloc[(-1) * self.NumObs:, :]
+        factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
+        mu, Q = Lasso(returns, factRet, S)
+        x = risk_parity(mu, Q, c)
         return x

@@ -22,9 +22,14 @@ def project_function_test(periodReturns, periodFactRet, x0, params):
     U = params[5]
     K = params[6]
     
+    if llambda_to == 0:
+        min_to = False
+    else:
+        min_to = True
+    
     x = Strategy.execute_strategy(periodReturns, periodFactRet,
                                             L=L, U=U, K=K,
-                                            min_to=True, llambda_to=llambda_to, x0=x0,
+                                            min_to=min_to, llambda_to=llambda_to, x0=x0,
                                             card=True, L_c=L_c, U_c=U_c, K_c=K_c)
 
     # Strategy = Mean_Variance_TE()
@@ -68,12 +73,12 @@ def project_function_test2(periodReturns, periodFactRet, x0):
 
         # Range of parameters to test:
         strats = [0]
-        L_cs = [0.05]
-        U_cs = [0.1, 0.15, 0.2, 0.25] # this
-        K_cs = [15]
-        llambdas = [1, 10, 100] # this
+        L_cs = []#[0.05]
+        U_cs = []#[0.1, 0.15, 0.2, 0.25] # this
+        K_cs = []#[15]
+        llambdas = []#[1, 10, 100] # this
         nos = [24, 36, 48] # this
-        ps = list(range(2, 6))
+        ps = []#list(range(2, 6))
         Ls = [0, 0.1, 0.2, 0.3, 0.4, 0.5]
         Us = list(range(1, 6))
         Ks = list(range(1, 8)) # maybe choose 2-3 (low, medium, high)
@@ -188,7 +193,9 @@ def find_params(params_ranges, strategies, periodReturns, periodFactRet, T, x0):
         if i0 == 0: # BSS_MVO
             # Generate all combinations of parameters using NumPy meshgrid
             grid = np.meshgrid(param1s, param2s, param3s, param4s, param5s, param7s, param8s, param9s)
+            print(grid)
             param_combinations = np.stack(grid, axis=-1).reshape(-1, 8)
+            print(param_combinations)
 
             # Preallocate space for portfolio returns and turnovers
             portfReturns = pd.DataFrame({'Returns': np.zeros((T, len(param_combinations)))}, index=periodReturns.index)

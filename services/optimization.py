@@ -2,36 +2,6 @@ import cvxpy as cp
 import numpy as np
 from scipy.stats import chi2
 
-def risk_parity(mu, Q, c):
-
-    # Find the total number of assets
-    n = len(mu)
-
-    # Disallow short sales
-    lb = np.zeros(n)
-
-    # Define and solve using CVXPY
-    x = cp.Variable(n)
-    y = cp.Variable(n)
-
-    obj = cp.Minimize(((1 / 2) * cp.quad_form(y, Q)) - c*cp.sum(cp.log(y)))
-    constraints = [y >= lb] #set constraints
-
-    prob = cp.Problem(obj, constraints)
-    prob.solve(verbose=False)
-
-    y_val = np.array(y.value)
-    y_sum = np.sum(y_val)
-
-    #print(y_sum)
-    x = y_val / y_sum
-    for i in range(n):
-        #print(y_val[i])
-        k = y_val[i] * y_sum
-        #print(k)
-
-    return x
-
 def MVO(mu, Q, 
         min_to=False, llambda_to=1, x0=[],
         robust=False, NumObs=36, alpha=0.95, llambda=1, 
@@ -192,36 +162,32 @@ def market_cap(r_mkt, R):
     return x.value
 
 
-def MV_TE(x_mkt, mu, Q, k, x0=[], min_to=False):
+def risk_parity(mu, Q, c):
+
+    # Find the total number of assets
     n = len(mu)
 
-    x = cp.Variable(n)
-    y = cp.Variable(n, boolean=True)
-
+    # Disallow short sales
     lb = np.zeros(n)
-    Aeq = np.ones([1, n])
 
-    objective = cp.quad_form(x - x_mkt, Q)
-    constraints = [mu.T @ x >= mu.T @ x_mkt,
-                   Aeq @ x == 1,
-                   Aeq @ y <= k,
-                   x <= y,
-                   x >= lb]
-    
-    if min_to:
-        z = cp.Variable(n)
-        objective = cp.quad_form(x - x_mkt, Q) + cp.sum(z)
-        constraints = [mu.T @ x >= mu.T @ x_mkt,
-                       Aeq @ x == 1,
-                       Aeq @ y <= k,
-                       x <= y,
-                       x >= lb,
-                       z >= lb,
-                       x - x0 <= z,
-                       x - x0 >= -z]
+    # Define and solve using CVXPY
+    x = cp.Variable(n)
+    y = cp.Variable(n)
 
-    prob = cp.Problem(cp.Minimize(objective),
-                      constraints)
+    obj = cp.Minimize(((1 / 2) * cp.quad_form(y, Q)) - c*cp.sum(cp.log(y)))
+    constraints = [y >= lb] #set constraints
+
+    prob = cp.Problem(obj, constraints)
     prob.solve(verbose=False)
-    
-    return x.value
+
+    y_val = np.array(y.value)
+    y_sum = np.sum(y_val)
+
+    #print(y_sum)
+    x = y_val / y_sum
+    for i in range(n):
+        #print(y_val[i])
+        k = y_val[i] * y_sum
+        #print(k)
+
+    return x

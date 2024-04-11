@@ -7,7 +7,7 @@ from services.optimization import *
 
 def MVO(mu, Q):
     """
-    #---------------------------------------------------------------------- Use this function to construct an example of a MVO portfolio.
+    #--- Use this function to construct an example of a MVO portfolio.
     #
     # An example of an MVO implementation is given below. You can use this
     # version of MVO if you like, but feel free to modify this code as much
@@ -86,6 +86,16 @@ def market_cap(r_mkt, R):
 
 def risk_parity(mu, Q, c):
 
+    '''
+    Equalizes risk contribution for each asset
+
+    Inputs:
+    c = scaling coefficient for ln term
+
+    Returns:
+    Optimal weights of portfolio 
+    '''
+
     # Find the total number of assets
     n = len(mu)
 
@@ -100,56 +110,30 @@ def risk_parity(mu, Q, c):
     constraints = [y >= lb] #set constraints
 
     prob = cp.Problem(obj, constraints)
-    prob.solve(verbose=False, solver=cp.ECOS)
+    prob.solve(verbose=False, solver = cp.SCS)
 
+    # Find individual y values from optimization and calculate sum
     y_val = np.array(y.value)
     y_sum = np.sum(y_val)
 
-    #print(y_sum)
-    x = y_val / y_sum
-    for i in range(n):
-        #print(y_val[i])
-        k = y_val[i] * y_sum
-        #print(k)
+    # Normalize weights
+    x = y_val / y_sum 
 
     return x
 
-def grp(mu, Q, c, llambda):
-
-    # Find the total number of assets
-    n = len(mu)
-
-    # Define and solve using CVXPY
-    x = cp.Variable(n)
-    z = cp.Variable()
-    one = np.ones(n)
-
-    e = np.eye(n)
-
-    constraints = []
-
-    for i in range(n):
-
-        e_i = e[:,i]
-        outer_prod = np.outer(e_i, e_i)
-        R = 0.5*(outer_prod @ Q + Q @ outer_prod)
-
-        constraints.append((1 + c)*z - cp.quad_form(x, R) >= 0)
-        constraints.append(cp.quad_form(x,R) - (1-c)*z >= 0)
-
-    constraints.append(one.T @ x == 1)
-
-
-    obj = cp.Minimize((0.5* cp.quad_form(x, Q)) - llambda*cp.matmul(mu.T, x))
-
-    #constraints = [(1 + c)*z - x.T*R*x >= 0, x.T*R*x - (1-c)*z >= 0, one.T*x == 1] #set constraints
-
-    prob = cp.Problem(obj, constraints)
-    prob.solve(verbose=False, solver=cp.GUROBI)
-
-    return x.value
 
 def rp_new(mu, Q, llambda, c):
+
+    '''
+    Equalizes risk contribution for each asset, takes into account expected returns
+
+    Inputs:
+    c = scaling coefficient for ln term
+    llambda = scaling coefficient for expected returns
+
+    Returns:
+    Optimal weights of portfolio 
+    '''
 
     # Find the total number of assets
     n = len(mu)
@@ -170,17 +154,14 @@ def rp_new(mu, Q, llambda, c):
     y_val = np.array(y.value)
     y_sum = np.sum(y_val)
 
-    #print(y_sum)
     x = y_val / y_sum
     for i in range(n):
-        #print(y_val[i])
         k = y_val[i] * y_sum
-        #print(k)
 
     return x
 
 
-def MVO_card_minT(mu, Q, x0 = [], L=0.03, U=1, K=10, llambda = 0.1):
+def MVO_card_minT(mu, Q, x0, L, U, K, llambda):
 
     '''
     Returns estimated market portfolio weights.
@@ -194,6 +175,7 @@ def MVO_card_minT(mu, Q, x0 = [], L=0.03, U=1, K=10, llambda = 0.1):
     Returns:
         x (np.ndarray): n x 1 vector of estimated asset weights for the market portfolio
     '''
+
 
     # Find the total number of assets
     n = len(mu)

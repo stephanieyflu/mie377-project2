@@ -80,7 +80,7 @@ def market_cap(r_mkt, R):
 
     return x.value
 
-'''
+
 def CVaR(mu, Q, alpha):
     """
     Perform Conditional Value at Risk (CVaR) portfolio optimization.
@@ -116,8 +116,8 @@ def CVaR(mu, Q, alpha):
 
     prob.solve(verbose=True, solver=cp.ECOS)
     return x.value
-'''
 
+'''
 import scipy.stats as stats
 
 def CVaR(mu, Q, alpha):
@@ -155,7 +155,7 @@ def CVaR(mu, Q, alpha):
 
     return cvar
 
-
+'''
 
 
 

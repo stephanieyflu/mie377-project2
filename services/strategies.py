@@ -132,6 +132,20 @@ class Monte_Carlo_CVaR_Opt:
         x = MonteCarlo_CVaR(mu, Q)
         return x
     
+class Monte_Carlo_DR_CVaR_Opt:
+
+    def __init__(self, NumObs=36):
+        self.NumObs = NumObs  # number of observations to use
+
+    def execute_strategy(self, periodReturns, factorReturns, x0):
+        T, n = periodReturns.shape
+        # get the last T observations
+        returns = periodReturns.iloc[(-1) * self.NumObs:, :]
+        factRet = factorReturns.iloc[(-1) * self.NumObs:, :]
+        mu, Q = OLS(returns, factRet)
+        x = MonteCarlo_Distb_Rob_CVaR(mu, Q, x0)
+        return x
+    
 class Min_T_Monte_Carlo_Opt:
 
     def __init__(self, NumObs=36):

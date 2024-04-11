@@ -117,10 +117,10 @@ def CVaR(mu, Q, alpha):
     prob.solve(verbose=True, solver=cp.ECOS)
     return x.value
 
-'''
+
 import scipy.stats as stats
 
-def CVaR(mu, Q, alpha):
+def CVaR2(mu, Q, alpha):
     """
     Perform Conditional Value at Risk (CVaR) portfolio optimization.
 
@@ -133,29 +133,28 @@ def CVaR(mu, Q, alpha):
     - cvar: Conditional Value at Risk
     """
 
-    # Define and solve using CVXPY
+       # Find the total number of assets
     n = len(mu)
+
+    #Target return
+    targetRet = np.mean(mu)
+    
+    # Number of historical scenarios
+    S = Q.shape[0]
+
+    # Define and solve using CVXPY
     x = cp.Variable(n)
-    z = cp.Variable()
-
-    # Calculate the inverse of the cumulative distribution function (CDF) of the normal distribution
-    norm_inv = stats.norm.ppf(alpha)
-
+    z = cp.Variable(S)
+   
     # Define the objective function
-    prob = cp.Problem(cp.Minimize(z),
+    prob = cp.Problem(cp.Minimize(cp.sum(z)/((1 - alpha)*S)),
                       [z >= 0,
-                       z >= -mu.T @ x,
+                       z >= -mu.T @ x ,
                        cp.sum(x) == 1,
-                       -mu.T @ x >= -norm_inv * cp.norm(x, p=1)])
+                       -mu.T @ x >= -targetRet])
 
     prob.solve(verbose=True, solver=cp.ECOS)
-
-    # Calculate CVaR
-    cvar = z.value
-
-    return cvar
-
-'''
+    return x.value
 
 
 
@@ -221,38 +220,95 @@ def MonteCarlo(mu, Q, num_samples=10000):
     return x
 
 
-def MonteCarlo_CVaR(mu, Q, alpha=0.95, num_samples=10):
-    # Ensure mu is a 1-dimensional array
+def MonteCarlo_CVaR(mu, Q, alpha=0.95, num_samples=10000):
+    # Flatten mu if it's a 2D array
+    
     mu = np.squeeze(mu)
 
     # Generate random samples from multivariate normal distribution
     samples = np.random.multivariate_normal(mu, Q, size=num_samples)
 
-    # Ensure num_samples is not greater than the actual number of samples generated
-    num_samples = min(num_samples, samples.shape[0])
+    # Calculate portfolio returns for each sample
+    portfolio_returns = samples.sum(axis=1)
 
-    if num_samples == 0:
-        return np.zeros((1, len(mu)))  # Return zeros if no samples are generated
+    # Find the index of the sample with the highest return
+    max_return_index = np.argmax(portfolio_returns)
 
-    # Calculate CVaR for each sample
-    cvars = np.zeros(num_samples)
-    for i, sample in enumerate(samples):
-        cvars[i] = CVaR(sample, Q, alpha)
+    # Get the optimal portfolio weights corresponding to the sample with the highest return
+    x = samples[max_return_index]
 
-    # Find the index of the sample with the lowest CVaR
-    min_cvar_index = np.argmin(cvars)
-
-    # Get the optimal portfolio weights corresponding to the sample with the lowest CVaR
-    x = samples[min_cvar_index]
+    targetRet = np.mean(mu)
 
     # Normalize weights to sum up to 1
-    x /= np.sum(x)
+    x = x / np.sum(x)
+    n = len(mu)
+    S = Q.shape[0]
+    z = cp.Variable(n)
 
-    # Reshape x to a 2-dimensional array
-    x = x.reshape(1, -1)
+    # Define the objective function
+    objective = cp.Minimize(cp.sum(z) / ((1 - alpha) * S))
+
+    # Define constraints
+    constraints = [
+        z >= 0,
+        z >= -cp.matmul(mu.T, x) ,
+        cp.sum(x) == 1,
+        -cp.matmul(mu.T, x) >= -targetRet
+    ]
+
+    # Solve the problem
+    prob = cp.Problem(objective, constraints)
+    prob.solve(solver=cp.OSQP)
 
     return x
 
+def MonteCarlo_Distb_Rob_CVaR(mu, Q, x0, alpha=0.95, num_samples=10000, radius = 1):
+    # Flatten mu if it's a 2D array
+    
+    mu = np.squeeze(mu)
+
+    # Generate random samples from multivariate normal distribution
+    samples = np.random.multivariate_normal(mu, Q, size=num_samples)
+
+    # Calculate portfolio returns for each sample
+    portfolio_returns = samples.sum(axis=1)
+
+    # Find the index of the sample with the highest return
+    max_return_index = np.argmax(portfolio_returns)
+
+    # Get the optimal portfolio weights corresponding to the sample with the highest return
+    x = samples[max_return_index]
+
+    targetRet = np.mean(mu)
+
+    # Normalize weights to sum up to 1
+    x = x / np.sum(x)
+    n = len(mu)
+    S = Q.shape[0]
+    z = cp.Variable(n)
+
+    # Define the objective function
+    objective = cp.Minimize(cp.sum(z) / ((1 - alpha) * S))
+
+    # Define constraints
+    constraints = [
+        z >= 0,
+        z >= -cp.matmul(mu.T, x) ,
+        cp.sum(x) == 1,
+        -cp.matmul(mu.T, x) >= -targetRet,
+        cp.norm(x - x0, p=2) <= radius
+    ]
+
+    # Solve the problem
+    prob = cp.Problem(objective, constraints)
+    prob.solve(solver=cp.OSQP)
+
+    return x
+
+   
+
+#did not consider  
+   
 def MinTurnMonteCarlo(mu, Q, num_samples=100, min_turnover=0.5):
     # Ensure mu is a 1-dimensional array
     mu = np.squeeze(mu)

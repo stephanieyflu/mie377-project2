@@ -26,10 +26,17 @@ def MVO(mu, Q,
     Inputs:
         mu (np.ndarray): n x 1 vector of expected asset returns
         Q (np.ndarray): n x n matrix of asset covariances
+        min_to (bool): flag for adding turnover term to MVO objective
+        llambda_to (float): penalization factor for the turnover term
+        x0 (np.ndarray): weights during the previous period
         robust (bool): flag for selecting robust MVO
-        T (int): number of observations
+        NumObs (int): number of most recent observations used to estimate mu and Q
         alpha (float): alpha value for ellipsoidal robust MVO
         llambda (float): lambda value for ellipsoidal robust MVO
+        card (bool): flag to add cardinality constraints to MVO
+        L_c (float): lower buy-in limit 
+        U_c (float): upper buy-in limit 
+        K (int): cardinality constraint
     
     Returns:
         x (np.ndarray): n x 1 vector of estimated asset weights for the market portfolio
@@ -163,6 +170,16 @@ def market_cap(r_mkt, R):
 
 
 def risk_parity(mu, Q, c):
+    '''
+    Returns portfolio weights based on the risk parity model.
+
+    Inputs:
+        mu (np.ndarray): n x 1 vector of expected asset returns
+        Q (np.ndarray): n x n matrix of asset covariances
+    
+    Returns:
+        x (np.ndarray): n x 1 vector of estimated asset weights for the market portfolio
+    '''
 
     # Find the total number of assets
     n = len(mu)
@@ -175,19 +192,15 @@ def risk_parity(mu, Q, c):
     y = cp.Variable(n)
 
     obj = cp.Minimize(((1 / 2) * cp.quad_form(y, Q)) - c*cp.sum(cp.log(y)))
-    constraints = [y >= lb] #set constraints
+    constraints = [y >= lb]
 
     prob = cp.Problem(obj, constraints)
-    prob.solve(verbose=False)
+    prob.solve(verbose=False, solver=cp.ECOS)
 
     y_val = np.array(y.value)
     y_sum = np.sum(y_val)
 
-    #print(y_sum)
+    # Normalize y to find weights
     x = y_val / y_sum
-    for i in range(n):
-        #print(y_val[i])
-        k = y_val[i] * y_sum
-        #print(k)
 
     return x

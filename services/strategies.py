@@ -11,7 +11,7 @@ def equal_weight(periodReturns):
     """
     computes the equal weight vector as the portfolio
     :param periodReturns:
-    :return:x
+    :return: x
     """
     T, n = periodReturns.shape
     x = (1 / n) * np.ones([n])
@@ -46,7 +46,7 @@ class HistoricalMeanVarianceOptimization:
 
 class OLS_MVO:
     """
-    uses historical returns to estimate the covariance matrix and expected return
+    uses all factors and OLS to estimate the covariance matrix and expected return
     """
 
     def __init__(self, NumObs=36):
@@ -70,6 +70,9 @@ class OLS_MVO:
     
 
 class RP:
+    """
+    uses PCA to estimate the covariance matrix and expected return
+    """
 
     def __init__(self, NumObs=36):
         self.NumObs = NumObs  # number of observations to use
@@ -78,14 +81,15 @@ class RP:
         """
         executes the portfolio allocation strategy based on the parameters in the __init__
 
-        :param factorReturns:
+        :param NumObs:
         :param periodReturns:
-        :return:x
+        :param c:
+        :param p:
+        :return: x
         """
         T, n = periodReturns.shape
         # get the last T observations
         returns = periodReturns.iloc[(-1) * NumObs:, :]
-
         mu, Q = PCA(returns, p=p)
         x = risk_parity(mu, Q, c)
 

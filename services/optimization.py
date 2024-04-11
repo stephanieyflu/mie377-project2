@@ -118,45 +118,6 @@ def CVaR(mu, Q, alpha):
     return x.value
 
 
-import scipy.stats as stats
-
-def CVaR2(mu, Q, alpha):
-    """
-    Perform Conditional Value at Risk (CVaR) portfolio optimization.
-
-    Args:
-    - mu: Expected returns of assets
-    - Q: Covariance matrix of asset returns
-    - alpha: Confidence level (default value is 0.95)
-
-    Returns:
-    - cvar: Conditional Value at Risk
-    """
-
-       # Find the total number of assets
-    n = len(mu)
-
-    #Target return
-    targetRet = np.mean(mu)
-    
-    # Number of historical scenarios
-    S = Q.shape[0]
-
-    # Define and solve using CVXPY
-    x = cp.Variable(n)
-    z = cp.Variable(S)
-   
-    # Define the objective function
-    prob = cp.Problem(cp.Minimize(cp.sum(z)/((1 - alpha)*S)),
-                      [z >= 0,
-                       z >= -mu.T @ x ,
-                       cp.sum(x) == 1,
-                       -mu.T @ x >= -targetRet])
-
-    prob.solve(verbose=True, solver=cp.ECOS)
-    return x.value
-
-
 
 def DistbRobustCVaR(mu, Q, x0, alpha =0.95, radius=1):
     """
@@ -199,6 +160,17 @@ def DistbRobustCVaR(mu, Q, x0, alpha =0.95, radius=1):
 
 
 def MonteCarlo(mu, Q, num_samples=10000):
+    """
+    Perform Conditional Value at Risk (CVaR) portfolio optimization.
+
+    Args:
+    - mu: Expected returns of assets
+    - Q: Covariance matrix of asset returns
+    - num_samples: iterations taken to compute optimal weights 
+
+    Returns:
+    - x: optimal asset weights determined from Monte Carlo simulations
+    """ 
     # Ensure mu is a 1-dimensional array
     mu = np.squeeze(mu)
 
@@ -221,8 +193,21 @@ def MonteCarlo(mu, Q, num_samples=10000):
 
 
 def MonteCarlo_CVaR(mu, Q, alpha=0.95, num_samples=10000):
+    """
+    Perform Conditional Value at Risk (CVaR) portfolio optimization.
+
+    Args:
+    - mu: Expected returns of assets
+    - Q: Covariance matrix of asset returns
+    - alpha: Confidence level (default value is 0.95)
+    - num_samples: number of iterations taken in Monte Carlo
+
+    Returns:
+    - x: asset weights subjected to CVaR constraints and MonteCarlo
+    """
+
+
     # Flatten mu if it's a 2D array
-    
     mu = np.squeeze(mu)
 
     # Generate random samples from multivariate normal distribution
@@ -262,7 +247,20 @@ def MonteCarlo_CVaR(mu, Q, alpha=0.95, num_samples=10000):
 
     return x
 
+
+#Non convex
 def MonteCarlo_Distb_Rob_CVaR(mu, Q, x0, alpha=0.95, num_samples=10000, radius = 1):
+    """
+    Perform Conditional Value at Risk (CVaR) portfolio optimization.
+
+    Args:
+    - mu: Expected returns of assets
+    - Q: Covariance matrix of asset returns
+    - alpha: Confidence level (default value is 0.95)
+
+    Returns:
+    - x: asset weights subjected to Monte Carlo and Distributionally Robust CVaR
+    """
     # Flatten mu if it's a 2D array
     
     mu = np.squeeze(mu)
@@ -308,8 +306,19 @@ def MonteCarlo_Distb_Rob_CVaR(mu, Q, x0, alpha=0.95, num_samples=10000, radius =
    
 
 #did not consider  
-   
 def MinTurnMonteCarlo(mu, Q, num_samples=100, min_turnover=0.5):
+    """
+    Perform Conditional Value at Risk (CVaR) portfolio optimization.
+
+    Args:
+    - mu: Expected returns of assets
+    - Q: Covariance matrix of asset returns
+    - num_samples: number of iteratoins taken  by Monte Carlo
+    - min_turnover: minimum turnover it must reach
+
+    Returns:
+    - x: asset weights subjected to CVaR constraints
+    """
     # Ensure mu is a 1-dimensional array
     mu = np.squeeze(mu)
     
@@ -332,46 +341,21 @@ def MinTurnMonteCarlo(mu, Q, num_samples=100, min_turnover=0.5):
     
     return x
 
-def Max_Sharpe_Min_Turn(mu, Q, x0, llambda=1):
-    #towards minimizing turnover
-        # Find the total number of assets
-    n = len(mu)
 
-    # Define and solve using CVXPY
-    y = cp.Variable(n)
-    k = cp.Variable()
-    z = cp.Variable(n)
-     #scalar big just turn over, and small is sharpe 
-    
-    prob = cp.Problem(cp.Minimize(cp.quad_form(y, Q)+(llambda*cp.sum(z))), 
-                      [np.transpose(mu)@y == 1,
-                       np.transpose(np.ones(n))@y == k,
-                       z >= y - (k*x0),
-                       z >= (k*x0) -y,
-                       k >= 0,
-                       y >= 0])
-    
-    prob.solve(verbose=False, solver=cp.ECOS)
-    x = y.value/k.value
-
-    return x
-
-
-def MVO2(mu, Q, x0, llambda):
+#MVO with min turnover constraint 
+def MVO2(mu, Q, x0, llambda=1):
     """
-    #---------------------------------------------------------------------- Use this function to construct an example of a MVO portfolio.
-    #
-    # An example of an MVO implementation is given below. You can use this
-    # version of MVO if you like, but feel free to modify this code as much
-    # as you need to. You can also change the inputs and outputs to suit
-    # your needs.
+    Perform Conditional Value at Risk (CVaR) portfolio optimization.
 
-    # You may use quadprog, Gurobi, or any other optimizer you are familiar
-    # with. Just be sure to include comments in your code.
+    Args:
+    - mu: Expected returns of assets
+    - Q: Covariance matrix of asset returns
+    - llambda: turnover constraint coefficent 
 
-    # *************** WRITE YOUR CODE HERE ***************
-    #----------------------------------------------------------------------
+    Returns:
+    - x: Optimal asset weights 
     """
+ 
 
     # Find the total number of assets
     n = len(mu)

@@ -11,7 +11,7 @@ class RP:
     def __init__(self, NumObs=36):
         self.NumObs = NumObs  # number of observations to use
 
-    def execute_strategy(self, NumObs, periodReturns, factorReturns, c, L, U, K):
+    def execute_strategy(self, NumObs, periodReturns, factorReturns, c, p, L, U, K):
         """
         executes the portfolio allocation strategy based on the parameters in the __init__
 
@@ -23,11 +23,16 @@ class RP:
         # get the last T observations
         returns = periodReturns.iloc[(-1) * NumObs:, :]
         factRet = factorReturns.iloc[(-1) * NumObs:, :]
+
+        if p != 0:
         # mu, Q = OLS(returns, factRet)
-        # mu, Q = PCA(returns, p=p)
-        mu, Q = BSS(returns, factRet, L=L, U=U, K=K)
+            mu, Q = PCA(returns, p=p)
+
+        elif p == 0:
+            mu, Q = BSS(returns, factRet, L=L, U=U, K=K)
+        
         x = risk_parity(mu, Q, c)
-        return x
+        return x, Q
 
 def equal_weight(periodReturns):
     """

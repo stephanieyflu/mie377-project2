@@ -1,11 +1,12 @@
 from services.strategies import *
 import os
 
-def project_function(periodReturns, periodFactRet, x0):
+def project_function(periodReturns, periodFactRet, x0=[]):
     """
     Please feel free to modify this function as desired
     :param periodReturns:
     :param periodFactRet:
+    :param x0:
     :return: the allocation as a vector
     """
     Strategy = RP()
